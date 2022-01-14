@@ -1,39 +1,59 @@
 import React, {useEffect, useState} from "react";
-import {Container, Row, Col} from "react-bootstrap";
-import {Post} from "./Post";
+import {Container, Row, Button} from "react-bootstrap";
+import {PostsRow} from "./PostsRow";
 
 const postsToLoadEachTime = 3;
 
 export function Posts() {
 
     const [posts, setPosts] = useState([]);
+    const [postsCount, setPostsCount] = useState(0);
 
-    useEffect(() => {
-        fetch("https://api.nasa.gov/planetary/apod?api_key=" + process.env.REACT_APP_NASA_API_KEY + "&count=" + postsToLoadEachTime)
+    function loadPosts() {
+        return fetch("https://api.nasa.gov/planetary/apod?api_key=" + process.env.REACT_APP_NASA_API_KEY + "&count=" + postsToLoadEachTime)
             .then(res => res.json())
             .then(res => {
-                let i = 0;
-                setPosts(res.map((element) => {
-                    return {
+                let i = postsCount;
+                return res.map((element) => {
+                    let post = {
                         id: i++,
                         title: element.title,
                         url: element.url,
-                        hdUrl: element.hdurl
+                        hdUrl: element.hdurl,
+                        date: element.date,
+                        liked: false
                     }
-                }));
+
+                    setPostsCount(i);
+
+                    return post;
+                });
+            });
+    }
+
+    useEffect(() => {
+        loadPosts()
+            .then(newPosts => {
+                setPosts([newPosts]);
             })
     }, [])
 
+    function loadMorePosts() {
+        loadPosts()
+            .then(newPosts => {
+                setPosts(posts.concat([newPosts]));
+            })
+    }
+
     return (
         <Container>
-            <Row>
             {
-                posts.map(element => (
-                    <Col key={element.id}>
-                        <Post post={element} />
-                    </Col>
+                posts.map((postsRow, index) => (
+                    <PostsRow posts={postsRow} key={index} />
                 ))
             }
+            <Row>
+                <Button style={{marginTop: "25px", marginBottom: "25px"}} variant="outline-dark" onClick={loadMorePosts}>Load More</Button>
             </Row>
         </Container>
     )
